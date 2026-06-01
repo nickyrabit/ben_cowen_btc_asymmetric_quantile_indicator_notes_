@@ -1,0 +1,88 @@
+//@version=5
+indicator("Bitcoin Asymmetric Quantile Bands - Cowen 2026", overlay=true, max_labels_count=100)
+
+// Based on Benjamin Cowen, "Asymmetric Tail Curvature in Bitcoin Price Quantiles"
+// Working paper dated May 29, 2026. This is a fixed-coefficient visualization,
+// not a trading system or a re-estimation of the model.
+
+showLower = input.bool(true, "Show lower bands")
+showMiddle = input.bool(true, "Show median")
+showUpper = input.bool(true, "Show upper bands")
+showFills = input.bool(true, "Fill bands")
+showTable = input.bool(true, "Show status table")
+
+genesis = timestamp("GMT+0", 2009, 1, 3, 0, 0)
+msPerDay = 24.0 * 60.0 * 60.0 * 1000.0
+daysSinceGenesis = math.max((time - genesis) / msPerDay, 1.0)
+
+mu = 7.9914
+x = math.log(daysSinceGenesis) - mu
+
+quantilePrice(float c, float a, float b) =>
+    math.pow(10.0, c + a * x + b * x * x)
+
+q01 = quantilePrice(2.837, 2.578, -0.0241)
+q10 = quantilePrice(2.933, 2.552, -0.0241)
+q25 = quantilePrice(3.004, 2.554, -0.0241)
+q50 = quantilePrice(3.214, 2.482, -0.1126)
+q75 = quantilePrice(3.562, 2.283, -0.3259)
+q95 = quantilePrice(3.897, 1.964, -0.3259)
+q99 = quantilePrice(4.028, 1.904, -0.3259)
+
+valid = time >= genesis
+
+p01 = plot(showLower and valid ? q01 : na, "Q1%", color=color.new(color.red, 0), linewidth=1)
+p10 = plot(showLower and valid ? q10 : na, "Q10%", color=color.new(color.orange, 0), linewidth=1)
+p25 = plot(showLower and valid ? q25 : na, "Q25%", color=color.new(color.yellow, 0), linewidth=1)
+p50 = plot(showMiddle and valid ? q50 : na, "Q50%", color=color.new(color.white, 0), linewidth=2)
+p75 = plot(showUpper and valid ? q75 : na, "Q75%", color=color.new(color.aqua, 0), linewidth=1)
+p95 = plot(showUpper and valid ? q95 : na, "Q95%", color=color.new(color.blue, 0), linewidth=1)
+p99 = plot(showUpper and valid ? q99 : na, "Q99%", color=color.new(color.purple, 0), linewidth=1)
+
+fill(p01, p10, showFills and showLower ? color.new(color.red, 90) : na)
+fill(p10, p25, showFills and showLower ? color.new(color.orange, 91) : na)
+fill(p25, p50, showFills and showLower and showMiddle ? color.new(color.yellow, 93) : na)
+fill(p50, p75, showFills and showMiddle and showUpper ? color.new(color.aqua, 93) : na)
+fill(p75, p95, showFills and showUpper ? color.new(color.blue, 91) : na)
+fill(p95, p99, showFills and showUpper ? color.new(color.purple, 90) : na)
+
+regime =
+     close < q01 ? "Below Q1% extreme lower tail" :
+     close < q10 ? "Q1%-Q10% lower tail" :
+     close < q25 ? "Q10%-Q25% lower range" :
+     close < q50 ? "Q25%-Q50% below median" :
+     close < q75 ? "Q50%-Q75% above median" :
+     close < q95 ? "Q75%-Q95% upper tail" :
+     close < q99 ? "Q95%-Q99% extreme upper tail" :
+     "Above Q99% speculative extreme"
+
+d01 = math.abs(close - q01) / q01
+d10 = math.abs(close - q10) / q10
+d25 = math.abs(close - q25) / q25
+d50 = math.abs(close - q50) / q50
+d75 = math.abs(close - q75) / q75
+d95 = math.abs(close - q95) / q95
+d99 = math.abs(close - q99) / q99
+
+minDistance = math.min(d01, math.min(d10, math.min(d25, math.min(d50, math.min(d75, math.min(d95, d99))))))
+nearestBand =
+     minDistance == d01 ? "Q1%" :
+     minDistance == d10 ? "Q10%" :
+     minDistance == d25 ? "Q25%" :
+     minDistance == d50 ? "Q50%" :
+     minDistance == d75 ? "Q75%" :
+     minDistance == d95 ? "Q95%" :
+     "Q99%"
+
+distanceToMedian = 100.0 * (close / q50 - 1.0)
+
+var table status = table.new(position.top_right, 2, 4, border_width=1)
+if showTable and barstate.islast
+    table.cell(status, 0, 0, "Model", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(status, 1, 0, "Cowen 2026", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(status, 0, 1, "Regime", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(status, 1, 1, regime, text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(status, 0, 2, "Nearest", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(status, 1, 2, nearestBand, text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(status, 0, 3, "Vs median", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(status, 1, 3, str.tostring(distanceToMedian, "#.##") + "%", text_color=color.white, bgcolor=color.new(color.black, 0))
