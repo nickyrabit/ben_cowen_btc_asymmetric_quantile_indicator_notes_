@@ -14,6 +14,12 @@ The script plots fixed Bitcoin price quantile bands on a TradingView chart:
 
 These bands are meant to help visualize where Bitcoin's current price sits relative to the historical quantile model described in the paper.
 
+## Preview
+
+![Bitcoin Asymmetric Quantile Bands in TradingView](assets/preview.png)
+
+The screenshot above shows the indicator applied to a monthly Bitcoin chart in TradingView, with the quantile bands, shaded regions, and status table visible.
+
 ## How It Works
 
 The indicator uses the paper's published full-sample coefficients and applies this model:
