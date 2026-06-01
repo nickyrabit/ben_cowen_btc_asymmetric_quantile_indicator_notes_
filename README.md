@@ -16,9 +16,9 @@ These bands are meant to help visualize where Bitcoin's current price sits relat
 
 ## Preview
 
-![Bitcoin Asymmetric Quantile Bands in TradingView](assets/preview.png)
+![Bitcoin Asymmetric Quantile Bands in TradingView](assets/preview.svg)
 
-The screenshot above shows the indicator applied to a monthly Bitcoin chart in TradingView, with the quantile bands, shaded regions, and status table visible.
+The preview above shows the intended chart layout with quantile bands, shaded regions, and the status table. Actual appearance depends on the TradingView symbol, timeframe, and chart settings.
 
 ## How It Works
 
